@@ -641,6 +641,16 @@ function initMenu() {
    - Restarts as soon as the hero comes back into view
    ========================================================= */
 
+/* =========================================================
+   FLOATING SPARKS (hero canvas)
+   =========================================================
+   - Plays ONCE, when the visitor arrives on the site
+   - Stops for good as soon as the hero leaves the screen
+   - Stops for good after DURATION, and never restarts
+     (even if the visitor scrolls back to the hero)
+   - Lightweight: no blur filter, no dashed lines
+   ========================================================= */
+
 function initBirdy() {
 	var canvas = document.querySelector('canvas.birdy');
 	var hero = document.querySelector('header.intro');
@@ -650,7 +660,10 @@ function initBirdy() {
 	/*
 	 * Respect users who asked for reduced motion.
 	 */
-	if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+	if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		canvas.style.display = 'none';
+		return;
+	}
 
 	var ctx = canvas.getContext('2d');
 
@@ -659,12 +672,14 @@ function initBirdy() {
 	/*
 	 * Tweak these to make the effect more or less present.
 	 */
-	var COUNT = 14;            // number of sparks (was 7)
-	var TRAIL_LEN = 14;        // trail length (was 10)
-	var SPEED = 0.5;           // overall speed (was 0.4)
-	var SIZE_BOOST = 1.4;      // global size multiplier
-	var BLURRY_RATIO = 0.5;    // share of soft blurred sparks
-	var ALPHA_BOOST = 1.35;    // global opacity multiplier
+	var COUNT = 10;          // number of sparks
+	var TRAIL_LEN = 8;       // trail length
+	var SPEED = 0.5;         // overall speed
+	var SIZE_BOOST = 1.4;    // global size multiplier
+	var BLURRY_RATIO = 0.4;  // share of soft (ghost) sparks
+	var ALPHA_BOOST = 1.35;  // global opacity multiplier
+	var DURATION = 7000;     // total time the effect plays (ms)
+	var FADE_OUT = 1500;     // fade-out at the end (ms)
 
 	var width, height;
 	var frame = 0;
@@ -678,8 +693,10 @@ function initBirdy() {
 	 */
 	var rafId = null;
 	var driftTimer = null;
-	var heroVisible = true;
-	var pageVisible = !document.hidden;
+	var fadeTimer = null;
+	var endTimer = null;
+	var observer = null;
+	var finished = false;
 
 	function resize() {
 		width = canvas.clientWidth;
@@ -715,8 +732,7 @@ function initBirdy() {
 
 	function solveMove(p) {
 		/*
-		 * Blurry / spectral ones drift slowly,
-		 * sharp ones stay snappy.
+		 * Ghost sparks drift slowly, sharp ones stay snappy.
 		 */
 		var calm = p.blurry ? 0.4 : 1;
 
@@ -734,8 +750,7 @@ function initBirdy() {
 		p.move.z += SPEED * calm * (mouse.z - p.pos.z) * p.speed;
 
 		/*
-		 * Staccato kicks: sudden jerky direction changes,
-		 * muted for the slow, spectral ones.
+		 * Staccato kicks: sudden jerky direction changes.
 		 */
 		if (Math.random() < 0.015 + p.jerk * 0.05) {
 			p.move.x += (Math.random() - 0.5) * 0.06 * (0.5 + p.jerk) * calm;
@@ -743,23 +758,23 @@ function initBirdy() {
 		}
 	}
 
-	function trailIdxSet(p, pos) {
-		p.trail[trailIndex * 2] = pos.x;
-		p.trail[trailIndex * 2 + 1] = pos.y;
-	}
-
 	function drawSpark(p) {
-		var pos = { x: p.pos.x * width, y: p.pos.y * height, z: p.pos.z * 1.5 };
+		var x = p.pos.x * width;
+		var y = p.pos.y * height;
+		var depth = p.pos.z * 1.5;
 		var size = Math.max(
 			3,
-			((width + height) / 500) * pos.z * z.current * p.sizeMult
+			((width + height) / 500) * depth * z.current * p.sizeMult
 		);
 
-		trailIdxSet(p, pos);
+		/*
+		 * Store position for the trail.
+		 */
+		p.trail[trailIndex * 2] = x;
+		p.trail[trailIndex * 2 + 1] = y;
 
 		/*
-		 * Occasional flicker: sometimes skip drawing entirely,
-		 * or jump position.
+		 * Occasional flicker: skip drawing, or jump sideways.
 		 */
 		var flicker = Math.random();
 
@@ -769,96 +784,103 @@ function initBirdy() {
 
 		if (p.blurry) {
 			/*
-			 * Soft blurred square, no channel split:
-			 * contrasts with the crisp glitch fragments.
+			 * Soft ghost: two translucent squares instead of
+			 * a blur filter (much cheaper to draw).
 			 */
-			ctx.save();
-			ctx.filter = 'blur(' + Math.max(1.5, size * 0.55) + 'px)';
-			ctx.fillStyle = 'rgba(215,140,135,' + 0.28 * ALPHA_BOOST + ')';
+			ctx.fillStyle = 'rgba(215,140,135,' + 0.1 * ALPHA_BOOST + ')';
 			ctx.fillRect(
-				pos.x - size / 1.3 + jitter,
-				pos.y - size / 1.3,
-				size * 1.6,
-				size * 1.6
+				x - size * 1.1 + jitter,
+				y - size * 1.1,
+				size * 2.2,
+				size * 2.2
 			);
-			ctx.restore();
+
+			ctx.fillStyle = 'rgba(215,140,135,' + 0.18 * ALPHA_BOOST + ')';
+			ctx.fillRect(
+				x - size * 0.6 + jitter,
+				y - size * 0.6,
+				size * 1.2,
+				size * 1.2
+			);
+
 			return;
 		}
 
 		/*
-		 * Small squared fragments with a red/cyan channel split.
+		 * Sharp fragment with a red/cyan channel split.
 		 */
 		ctx.fillStyle = 'rgba(210,90,85,' + Math.min(1, 0.55 * ALPHA_BOOST) + ')';
-		ctx.fillRect(pos.x - size / 2 - 1.2 + jitter, pos.y - size / 2, size, size);
+		ctx.fillRect(x - size / 2 - 1.2 + jitter, y - size / 2, size, size);
 
 		ctx.fillStyle = 'rgba(120,200,195,' + Math.min(1, 0.45 * ALPHA_BOOST) + ')';
-		ctx.fillRect(pos.x - size / 2 + 1.2 + jitter, pos.y - size / 2, size, size);
+		ctx.fillRect(x - size / 2 + 1.2 + jitter, y - size / 2, size, size);
 
 		ctx.fillStyle = 'rgba(235,225,220,' + Math.min(1, 0.75 * ALPHA_BOOST) + ')';
-		ctx.fillRect(pos.x - size / 2 + jitter, pos.y - size / 2, size, size);
+		ctx.fillRect(x - size / 2 + jitter, y - size / 2, size, size);
 	}
 
 	function drawTrails() {
+		/*
+		 * One single path for every trail segment,
+		 * drawn with a single stroke() call.
+		 */
+		ctx.beginPath();
+		ctx.lineWidth = Math.max(1, (width + height) / 1800);
+		ctx.strokeStyle = 'rgba(190,100,95,' + Math.min(1, 0.3 * ALPHA_BOOST) + ')';
+
 		for (var i = TRAIL_LEN; i >= 2; i--) {
 			/*
-			 * Skip segments at random for a discontinuous,
-			 * glitchy trail instead of a smooth curved tail.
+			 * Skip segments at random for a glitchy,
+			 * discontinuous trail.
 			 */
 			if (Math.random() < 0.3) continue;
-
-			ctx.beginPath();
-			ctx.lineWidth = Math.max(1, (i / TRAIL_LEN) * ((width + height) / 1500));
-			ctx.setLineDash([2, 5]);
-			ctx.strokeStyle =
-				'rgba(190,100,95,' + Math.min(1, (i / TRAIL_LEN / 3) * ALPHA_BOOST) + ')';
 
 			var cur = (trailIndex + i) % TRAIL_LEN;
 			var last = (trailIndex + i + TRAIL_LEN - 1) % TRAIL_LEN;
 
-			particles.forEach(function (p) {
-				if (p.trail[last * 2] && p.trail[cur * 2]) {
-					ctx.moveTo(p.trail[cur * 2], p.trail[cur * 2 + 1]);
-					ctx.lineTo(p.trail[last * 2], p.trail[last * 2 + 1]);
-				}
-			});
+			for (var k = 0; k < particles.length; k++) {
+				var t = particles[k].trail;
 
-			ctx.stroke();
+				if (t[last * 2] && t[cur * 2]) {
+					ctx.moveTo(t[cur * 2], t[cur * 2 + 1]);
+					ctx.lineTo(t[last * 2], t[last * 2 + 1]);
+				}
+			}
 		}
 
-		ctx.setLineDash([]);
+		ctx.stroke();
 	}
 
 	function tick() {
-		try {
-			frame++;
-			z.current += (z.target - z.current) / 100;
+		if (finished) return;
 
-			ctx.clearRect(0, 0, width, height);
+		frame++;
+		z.current += (z.target - z.current) / 100;
 
-			particles.forEach(function (p) {
-				solveMove(p);
-				p.pos.x += p.move.x;
-				p.pos.y += p.move.y;
-				p.pos.z += p.move.z;
-			});
+		ctx.clearRect(0, 0, width, height);
 
-			drawTrails();
+		particles.forEach(function (p) {
+			solveMove(p);
+			p.pos.x += p.move.x;
+			p.pos.y += p.move.y;
+			p.pos.z += p.move.z;
+		});
 
-			trailIndex = (trailIndex + 1) % TRAIL_LEN;
+		drawTrails();
 
-			particles.forEach(drawSpark);
-		} catch (e) {
-			/* never let a transient glitch permanently kill the loop */
-		}
+		trailIndex = (trailIndex + 1) % TRAIL_LEN;
+
+		particles.forEach(drawSpark);
 
 		rafId = requestAnimationFrame(tick);
 	}
 
 	/*
-	 * Re-randomize the wandering target on an irregular
-	 * cadence, not a fixed beat.
+	 * Re-randomize the wandering target on an irregular cadence.
 	 */
 	function driftMouse() {
+		if (finished) return;
+
 		mouse.x = Math.random();
 		mouse.y = Math.random();
 		z.target = 0.4 + Math.random() * 0.8;
@@ -867,18 +889,17 @@ function initBirdy() {
 	}
 
 	/*
-	 * START / STOP
+	 * START / PAUSE
 	 * Only one loop can ever run at a time.
 	 */
 	function start() {
-		if (rafId !== null) return;
+		if (finished || rafId !== null) return;
 
-		resize();
 		driftMouse();
 		tick();
 	}
 
-	function stop() {
+	function pause() {
 		if (rafId !== null) {
 			cancelAnimationFrame(rafId);
 			rafId = null;
@@ -888,40 +909,78 @@ function initBirdy() {
 		driftTimer = null;
 	}
 
-	function update() {
-		if (heroVisible && pageVisible) {
-			start();
+	/*
+	 * FINISH
+	 * Called once. Stops everything for good, removes every
+	 * listener and hides the canvas. It never restarts.
+	 */
+	function finish() {
+		if (finished) return;
+
+		finished = true;
+		pause();
+
+		clearTimeout(fadeTimer);
+		clearTimeout(endTimer);
+
+		if (observer) observer.disconnect();
+
+		document.removeEventListener('visibilitychange', onVisibility);
+		window.removeEventListener('resize', onResize);
+
+		particles = [];
+		ctx.clearRect(0, 0, width, height);
+		canvas.style.display = 'none';
+	}
+
+	function onVisibility() {
+		if (finished) return;
+
+		if (document.hidden) {
+			pause();
 		} else {
-			stop();
+			start();
 		}
 	}
 
-	/*
-	 * Stop when the hero leaves the screen,
-	 * restart as soon as any part of it comes back.
-	 */
-	if ('IntersectionObserver' in window) {
-		new IntersectionObserver(
-			function (entries) {
-				heroVisible = entries[0].isIntersecting;
-				update();
-			},
-			{ threshold: 0 }
-		).observe(hero);
+	function onResize() {
+		if (!finished) resize();
 	}
 
 	/*
-	 * Stop when the tab is hidden.
+	 * As soon as the hero leaves the screen, the effect
+	 * is over for good.
 	 */
-	document.addEventListener('visibilitychange', function () {
-		pageVisible = !document.hidden;
-		update();
-	});
+	if ('IntersectionObserver' in window) {
+		observer = new IntersectionObserver(
+			function (entries) {
+				if (!entries[0].isIntersecting) {
+					finish();
+				}
+			},
+			{ threshold: 0 }
+		);
 
-	window.addEventListener('resize', resize);
+		observer.observe(hero);
+	}
 
+	document.addEventListener('visibilitychange', onVisibility);
+	window.addEventListener('resize', onResize);
+
+	/*
+	 * Fade out near the end, then shut everything down.
+	 */
+	canvas.style.transition = 'opacity ' + FADE_OUT + 'ms ease';
+
+	fadeTimer = setTimeout(function () {
+		canvas.style.opacity = '0';
+	}, DURATION - FADE_OUT);
+
+	endTimer = setTimeout(finish, DURATION);
+
+	resize();
 	create();
-	update();
+	start();
 }
 /* =========================================================
    SIMPLE VISIBILITY OBSERVER
