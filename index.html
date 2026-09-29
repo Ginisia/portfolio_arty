@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Giní Cormerais — Visual Artist</title>
+<meta name="description" content="Giní Cormerais — photography. Hide Your Fires, Syphery, Ást, Lightmare, Hemkov.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body id="page-top">
+
+<!-- Nav -->
+<header class="intro">
+  <canvas class="birdy" aria-hidden="true"></canvas>
+  <nav class="simple-nav" id="simpleNav">
+    <button class="menu-toggle" id="menuToggle" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span>
+    </button>
+    <div class="nav-links" id="navLinks">
+      <a href="#about">About</a><span class="dot">•</span>
+      <a href="#portfolio">Portfolio</a><span class="dot">•</span>
+      <a href="#contact">Contact</a>
+    </div>
+  </nav>
+  <div class="intro-text">
+    <h1>Giní Cormerais</h1>
+    <p id="scrambleTag">Photography</p>
+  </div>
+</header>
+
+<!-- About -->
+<section id="about">
+  <div class="gif-container"><img src="img/Gif2.gif" alt="" loading="lazy"></div>
+  <div class="about-text">
+    <p>
+      There is that breath. That flash. There is the sky cracking, the ground fragmenting,
+      and echoes of prayers. Was it meant to be there? Every message is received, sometimes
+      caught in mid-air or hunted through a glassy matter. At the threshold between the shapes
+      of day and the bedrock of night, an attempt to capture the shards and reconstruct the
+      temple.
+    </p>
+  </div>
+</section>
+
+<!-- Portfolio -->
+<section id="portfolio">
+  <div class="inner">
+    <div class="section-title">
+      <h2>Portfolio</h2>
+    </div>
+    <div class="categories">
+      <ul>
+        <li><a data-filter="hemkov">Hemkov</a></li>
+        <li><a data-filter="hyf">Hide Your Fires</a></li>
+        <!-- <li><a data-filter="syphery">Syphery</a></li> -->
+        <li><a data-filter="ast">Ást</a></li>
+        <li><a data-filter="lightmare">Lightmare</a></li>
+        <li><a data-filter="mixed" class="mix-trigger" aria-label="Mixed works">↻</a></li>
+      </ul>
+    </div>
+
+    <div class="portfolio-grid" id="portfolioGrid">
+      <!-- populated at runtime from img/portfolio/manifest.json — see js/main.js -->
+    </div>
+  </div>
+</section>
+
+<!--
+  FUTURE SECTIONS — built and ready, kept hidden for now.
+  To activate one when it's ready:
+    1. remove the `hidden` attribute below on that <section>
+    2. add a matching <li><a href="#papercuts">Papercuts</a></li> (etc.) to the nav in both
+       header locations (desktop ul + mobile menu use the same ul, so one edit covers both)
+    3. fill in real images the same way the Portfolio section does
+-->
+<section id="papercuts" hidden>
+  <div class="section-title"><h2>Papercuts</h2><hr class="rule"></div>
+  <div class="portfolio-grid"></div>
+</section>
+
+<section id="painting" hidden>
+  <div class="section-title"><h2>Painting</h2><hr class="rule"></div>
+  <div class="portfolio-grid"></div>
+</section>
+
+<section id="music" hidden>
+  <div class="section-title"><h2>Music</h2><hr class="rule"></div>
+  <p style="text-align:center;">Weekend Arôme — a duet, paused since '19.</p>
+</section>
+
+<!-- Contact -->
+<section id="contact">
+  <div class="inner">
+    <h2>Get In Touch</h2>
+    <h3><a href="mailto:ginicormerais@gmail.com" style="color:inherit;">ginicormerais@gmail.com</a></h3>
+    <div class="social">
+      <ul>
+        <li><a href="https://www.facebook.com/Gin%C3%AD-Cormerais-Visual-Artist-844791155578170/" target="_blank" rel="noopener" aria-label="Facebook">
+          <svg viewBox="0 0 24 24"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12Z"/></svg>
+        </a></li>
+        <li><a href="https://www.instagram.com/gsiaremko/" target="_blank" rel="noopener" aria-label="Instagram">
+          <svg viewBox="0 0 24 24"><path d="M12 2.2c3.2 0 3.6 0 4.9.07 1.2.06 2.1.26 2.6.46.6.24 1.1.55 1.6 1.05.5.5.8 1 1.05 1.6.2.5.4 1.4.46 2.6.06 1.3.07 1.7.07 4.9s0 3.6-.07 4.9c-.06 1.2-.26 2.1-.46 2.6-.24.6-.55 1.1-1.05 1.6-.5.5-1 .8-1.6 1.05-.5.2-1.4.4-2.6.46-1.3.06-1.7.07-4.9.07s-3.6 0-4.9-.07c-1.2-.06-2.1-.26-2.6-.46-.6-.24-1.1-.55-1.6-1.05-.5-.5-.8-1-1.05-1.6-.2-.5-.4-1.4-.46-2.6C2.21 15.6 2.2 15.2 2.2 12s0-3.6.07-4.9c.06-1.2.26-2.1.46-2.6.24-.6.55-1.1 1.05-1.6.5-.5 1-.8 1.6-1.05.5-.2 1.4-.4 2.6-.46C8.4 2.21 8.8 2.2 12 2.2Zm0 1.8c-3.15 0-3.52 0-4.76.07-.97.04-1.5.2-1.85.34-.46.18-.79.4-1.14.75-.35.35-.57.68-.75 1.14-.14.35-.3.88-.34 1.85C3.1 8.48 3.1 8.85 3.1 12s0 3.52.07 4.76c.04.97.2 1.5.34 1.85.18.46.4.79.75 1.14.35.35.68.57 1.14.75.35.14.88.3 1.85.34 1.24.07 1.61.07 4.76.07s3.52 0 4.76-.07c.97-.04 1.5-.2 1.85-.34.46-.18.79-.4 1.14-.75.35-.35.57-.68.75-1.14.14-.35.3-.88.34-1.85.07-1.24.07-1.61.07-4.76s0-3.52-.07-4.76c-.04-.97-.2-1.5-.34-1.85a3.03 3.03 0 0 0-.75-1.14 3.03 3.03 0 0 0-1.14-.75c-.35-.14-.88-.3-1.85-.34C15.52 4 15.15 4 12 4Zm0 3.4A4.6 4.6 0 1 1 7.4 12 4.6 4.6 0 0 1 12 7.4Zm0 1.8A2.8 2.8 0 1 0 14.8 12 2.8 2.8 0 0 0 12 9.2Zm4.8-2.9a1.08 1.08 0 1 1-1.08 1.08 1.08 1.08 0 0 1 1.08-1.08Z"/></svg>
+        </a></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div id="footer">
+  <p>&copy; Giní Cormerais</p>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightboxClose" aria-label="Close">&times;</button>
+  <img id="lightboxImg" src="" alt="">
+  <div class="lightbox-caption" id="lightboxCaption"></div>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+</html>

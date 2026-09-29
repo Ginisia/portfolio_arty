@@ -1,0 +1,70 @@
+{
+  "ast": [
+    "Ast1.JPG",
+    "Ast10.JPG",
+    "Ast11.JPG",
+    "Ast12.JPG",
+    "Ast13.JPG",
+    "Ast14.JPG",
+    "Ast15.JPG",
+    "Ast16.JPG",
+    "Ast17.JPG",
+    "Ast18.JPG",
+    "Ast19.JPG",
+    "Ast2.JPG",
+    "Ast20.JPG",
+    "Ast21.JPG",
+    "Ast22.JPG",
+    "Ast23.JPG",
+    "Ast24.JPG",
+    "Ast25.JPG",
+    "Ast26.JPG",
+    "Ast27.JPG",
+    "Ast28.JPG",
+    "Ast29.JPG",
+    "Ast3.JPG",
+    "Ast30.JPG",
+    "Ast31.JPG",
+    "Ast32.JPG",
+    "Ast33.JPG",
+    "Ast34.JPG",
+    "Ast35.JPG",
+    "Ast36.JPG",
+    "Ast37.jpg",
+    "Ast4.JPG",
+    "Ast5.JPG",
+    "Ast6.JPG",
+    "Ast7.JPG",
+    "Ast8.JPG",
+    "Ast9.JPG",
+    "ast_installation.jpg"
+  ],
+  "hemkov": [
+    "Hemkov1.jpg",
+    "Hemkov2.jpg",
+    "Hemkov3.jpg",
+    "Hemkov4.jpg",
+    "Hemkov5.jpg",
+    "Hemkov6.jpg",
+    "Hemkov7.jpg"
+  ],
+  "hide-your-fires": [
+    "hyf_02.jpg",
+    "hyf_03.jpg",
+    "hyf_04.jpg",
+    "hyf_05.jpg",
+    "hyf_06.jpg",
+    "hyf_07.jpg"
+  ],
+  "lightmare": [
+    "placeholder_01.jpg",
+    "placeholder_02.jpg",
+    "placeholder_03.jpg"
+  ],
+  "syphery": [
+    "syphery_01.jpg",
+    "syphery_02.jpg",
+    "syphery_03.jpg"
+  ],
+  "{hide-your-fires,syphery,ast,lightmare,wolkheim}": []
+}
