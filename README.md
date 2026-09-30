@@ -1,5 +1,5 @@
 
-<img src="./img/README/twin-peaks.gif" width="100" align="center">
+<img src="./img/README/twin-peaks.gif" width="200" align="center">
 
 **Visual Art · Portfolio**
 
