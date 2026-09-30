@@ -675,15 +675,6 @@ function initFilters() {
 
 			link.classList.add('active');
 			/*
-			 * On mobile the filter row scrolls sideways:
-			 * keep the selected filter in view.
-			 */
-			link.scrollIntoView({
-				behavior: 'smooth',
-				inline: 'center',
-				block: 'nearest',
-			});
-			/*
 			 * Every click generates a new random arrangement.
 			 */
 			renderPortfolio(filter);
@@ -1152,48 +1143,6 @@ window.addEventListener('resize', function () {
 });
 
 /* =========================================================
-   TINY CLICK SOUND
-========================================================= */
-
-var audioCtx = null;
-
-function playClick() {
-	try {
-		if (!audioCtx) {
-			audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-		}
-
-		var o = audioCtx.createOscillator();
-		var g = audioCtx.createGain();
-
-		o.type = 'sine';
-		o.frequency.value = 900 + Math.random() * 300;
-
-		g.gain.setValueAtTime(0.045, audioCtx.currentTime);
-		g.gain.exponentialRampToValueAtTime(
-			0.0001,
-			audioCtx.currentTime + 0.055
-		);
-
-		o.connect(g);
-		g.connect(audioCtx.destination);
-
-		o.start();
-		o.stop(audioCtx.currentTime + 0.06);
-	} catch (e) {
-		/* no audio support, fail silently */
-	}
-}
-
-function initClickSound() {
-	document
-		.querySelectorAll('.simple-nav a, .btn, .categories a')
-		.forEach(function (el) {
-			el.addEventListener('click', playClick);
-		});
-}
-
-/* =========================================================
    INITIALIZATION
    ========================================================= */
 
@@ -1203,7 +1152,6 @@ document.addEventListener('DOMContentLoaded', function () {
 	initMenu();
 	initBirdy();
 	initVisibilityObserver();
-  initClickSound();
 
 
 	loadPortfolio();
