@@ -1436,6 +1436,45 @@ function initAmbient() {
 	});
 }
 
+/* =========================================================
+   SECRET CONSOLE MESSAGE
+   =========================================================
+   For the curious who open the developer tools.
+   ========================================================= */
+
+function initConsoleMessage() {
+	if (!window.console || !console.log) return;
+
+	var title =
+		'font-family:monospace;font-size:13px;letter-spacing:3px;' +
+		'color:#d25a55;text-shadow:2px 0 #78c8c3;';
+	var quote =
+		'font-family:Georgia,serif;font-size:13px;font-style:italic;color:#9a9090;';
+	var small = 'font-family:monospace;font-size:10px;letter-spacing:2px;color:#6b6262;';
+
+	console.log(
+		'%c' +
+			'  ░░░░░░░░░░░░░░░░░░░░░░░░░░\n' +
+			'  ░  so you looked behind   ░\n' +
+			'  ░  the wall. of course.   ░\n' +
+			'  ░░░░░░░░░░░░░░░░░░░░░░░░░░',
+		title
+	);
+
+	console.log(
+		'%c"We are such stuff as dreams are made on,\n and our little life is rounded with a sleep."%c\n  — William Shakespeare, The Tempest',
+		quote,
+		small
+	);
+
+	console.log(
+		'%c"The oldest and strongest emotion of mankind is fear,\n and the oldest and strongest kind of fear is fear of the unknown."%c\n  — H. P. Lovecraft, Supernatural Horror in Literature',
+		quote,
+		small
+	);
+
+	console.log('%cno one remembers who left the key.', small);
+}
 
 /* =========================================================
    INITIALIZATION
@@ -1448,7 +1487,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	initBirdy();
 	initVisibilityObserver();
 	initAmbient();
-
+	initConsoleMessage();
 
 	loadPortfolio();
 });
