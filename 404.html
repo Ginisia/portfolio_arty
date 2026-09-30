@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Lost — Giní Cormerais</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@200&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#100d0d;--red:210,90,85;--cyan:120,200,195;}
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:var(--bg);color:#cfc6c6;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:28px;padding:24px;text-align:center;
+    font-family:'IBM Plex Mono',monospace;overflow:hidden;
+  }
+
+  /* 404 : trois couches, dont deux tranchées au hasard par le CSS */
+  .glitch{
+    position:relative;
+    font-family:'Lato',sans-serif;font-weight:200;
+    font-size:clamp(5rem,26vw,14rem);letter-spacing:.08em;line-height:1;
+    color:#eee;
+  }
+  .glitch::before,.glitch::after{
+    content:attr(data-text);position:absolute;inset:0;
+    mix-blend-mode:screen;pointer-events:none;
+  }
+  .glitch::before{color:rgb(var(--red));animation:sliceA 3.2s steps(1) infinite;}
+  .glitch::after{color:rgb(var(--cyan));animation:sliceB 2.7s steps(1) infinite;}
+
+  @keyframes sliceA{
+    0%,100%{clip-path:inset(0 0 100% 0);transform:translateX(0);}
+    8%{clip-path:inset(12% 0 70% 0);transform:translateX(-8px);}
+    10%{clip-path:inset(60% 0 15% 0);transform:translateX(6px);}
+    12%{clip-path:inset(0 0 100% 0);}
+    52%{clip-path:inset(35% 0 45% 0);transform:translateX(10px);}
+    54%{clip-path:inset(80% 0 4% 0);transform:translateX(-5px);}
+    56%{clip-path:inset(0 0 100% 0);}
+  }
+  @keyframes sliceB{
+    0%,100%{clip-path:inset(100% 0 0 0);transform:translateX(0);}
+    20%{clip-path:inset(50% 0 30% 0);transform:translateX(9px);}
+    22%{clip-path:inset(8% 0 78% 0);transform:translateX(-7px);}
+    24%{clip-path:inset(100% 0 0 0);}
+    70%{clip-path:inset(25% 0 55% 0);transform:translateX(-10px);}
+    73%{clip-path:inset(70% 0 10% 0);transform:translateX(6px);}
+    75%{clip-path:inset(100% 0 0 0);}
+  }
+
+  .msg{
+    min-height:1.6em;max-width:32em;
+    font-size:12px;letter-spacing:3px;text-transform:uppercase;line-height:1.8;
+    color:#9a9090;
+  }
+  .msg .s{color:rgb(var(--red));}
+
+  a.back{
+    font-size:11px;letter-spacing:2px;text-transform:uppercase;
+    color:#eee;text-decoration:none;
+    border:1px solid rgba(255,255,255,.3);border-radius:1.2em 0;
+    padding:13px 24px;transition:all .3s ease;
+  }
+  a.back:hover{background:rgba(95,32,32,.72);border-color:transparent;}
+
+  @media (prefers-reduced-motion:reduce){
+    .glitch::before,.glitch::after{animation:none;display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="glitch" data-text="404">404</div>
+<p class="msg" id="msg">This place only appears when you stop looking for it.</p>
+<a class="back" id="back" href="/">Return to the light</a>
+
+<script>
+  /* Le lien de retour doit marcher à toute profondeur d'adresse :
+     sur GitHub Pages (projet), l'accueil est /nom-du-depot/, sinon c'est / */
+  (function () {
+    var back = document.getElementById('back');
+    if (location.hostname.slice(-10) === '.github.io') {
+      var first = location.pathname.split('/')[1];
+      if (first) back.href = '/' + first + '/';
+    }
+  })();
+
+  /* Message qui se déchiffre, puis alterne */
+  (function () {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var el = document.getElementById('msg');
+    var LINES = [
+      'This place only appears when you stop looking for it.',
+      'Something was here. The key is gone.',
+      'The old gods moved. They left no address.'
+    ];
+    var chars = '!<>-_\\/[]{}—=+*^?#';
+    var n = 0, frame = 0, queue = [], raf;
+
+    function set(text) {
+      var old = el.textContent, len = Math.max(old.length, text.length);
+      queue = [];
+      for (var i = 0; i < len; i++) {
+        var s = Math.floor(Math.random() * 25);
+        queue.push({ from: old[i] || '', to: text[i] || '', s: s, e: s + Math.floor(Math.random() * 25), c: '' });
+      }
+      frame = 0;
+      step();
+    }
+
+    function step() {
+      var out = '', done = 0;
+      queue.forEach(function (q) {
+        if (frame >= q.e) { done++; out += q.to; }
+        else if (frame >= q.s) {
+          if (!q.c || Math.random() < 0.3) q.c = chars[Math.floor(Math.random() * chars.length)];
+          out += '<span class="s">' + q.c + '</span>';
+        } else out += q.from;
+      });
+      el.innerHTML = out;
+      if (done === queue.length) { setTimeout(next, 3200); }
+      else { frame++; raf = requestAnimationFrame(step); }
+    }
+
+    function next() {
+      if (document.hidden) { setTimeout(next, 1000); return; }
+      n = (n + 1) % LINES.length;
+      set(LINES[n]);
+    }
+
+    setTimeout(next, 2000);
+  })();
+</script>
+</body>
+</html>

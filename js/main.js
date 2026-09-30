@@ -1143,6 +1143,301 @@ window.addEventListener('resize', function () {
 });
 
 /* =========================================================
+   AMBIENT SOUND (generated, off by default)
+   =========================================================
+   - Low drone + distant bells with echo + very rare crackle
+   - Nothing is downloaded: everything is synthesized
+   - Fades in / out, stops when the tab is hidden
+   ========================================================= */
+
+function initAmbient() {
+	var btn = document.getElementById('soundToggle');
+
+	if (!btn) return;
+
+	var AC = window.AudioContext || window.webkitAudioContext;
+
+	if (!AC) {
+		btn.style.display = 'none';
+		return;
+	}
+
+	var VOLUME = 0.22; // master volume (0 to 1)
+
+	/*
+	 * Pentatonic scale (A minor): bells never clash.
+	 */
+	var SCALE = [220, 261.63, 293.66, 329.63, 392, 440, 523.25];
+
+	var ctx = null;
+	var master = null;
+	var echoIn = null;
+	var sources = [];
+	var on = false;
+	var bellTimer = null;
+	var crackleTimer = null;
+	var stopTimer = null;
+
+	function track(node) {
+		sources.push(node);
+		return node;
+	}
+
+	/*
+	 * DRONE: a few slightly detuned low sines,
+	 * slowly breathing through a soft low-pass filter.
+	 */
+	function buildDrone() {
+		var filter = ctx.createBiquadFilter();
+
+		filter.type = 'lowpass';
+		filter.frequency.value = 420;
+		filter.Q.value = 0.7;
+		filter.connect(master);
+
+		var filterLfo = track(ctx.createOscillator());
+		var filterLfoGain = ctx.createGain();
+
+		filterLfo.frequency.value = 0.04;
+		filterLfoGain.gain.value = 140;
+		filterLfo.connect(filterLfoGain);
+		filterLfoGain.connect(filter.frequency);
+		filterLfo.start();
+
+		[
+			[55, 0, 0.3],
+			[82.6, -6, 0.22],
+			[110.4, 5, 0.16],
+			[164.9, -4, 0.08],
+		].forEach(function (v, i) {
+			var osc = track(ctx.createOscillator());
+			var gain = ctx.createGain();
+			var lfo = track(ctx.createOscillator());
+			var lfoGain = ctx.createGain();
+
+			osc.type = 'sine';
+			osc.frequency.value = v[0];
+			osc.detune.value = v[1];
+			gain.gain.value = v[2];
+
+			/*
+			 * Each voice swells and fades at its own slow pace.
+			 */
+			lfo.frequency.value = 0.05 + i * 0.03;
+			lfoGain.gain.value = v[2] * 0.5;
+			lfo.connect(lfoGain);
+			lfoGain.connect(gain.gain);
+
+			osc.connect(gain);
+			gain.connect(filter);
+
+			osc.start();
+			lfo.start();
+		});
+	}
+
+	/*
+	 * ECHO: a shared delay with feedback, used by the bells.
+	 */
+	function buildEcho() {
+		echoIn = ctx.createGain();
+
+		var delay = ctx.createDelay(1.5);
+		var feedback = ctx.createGain();
+		var tone = ctx.createBiquadFilter();
+
+		delay.delayTime.value = 0.55;
+		feedback.gain.value = 0.45;
+		tone.type = 'lowpass';
+		tone.frequency.value = 1800;
+
+		echoIn.connect(delay);
+		delay.connect(tone);
+		tone.connect(feedback);
+		feedback.connect(delay);
+		tone.connect(master);
+	}
+
+	/*
+	 * BELL: a soft note with a long decay and an
+	 * inharmonic overtone, sent into the echo.
+	 */
+	function playBell() {
+		if (!ctx) return;
+
+		var now = ctx.currentTime;
+		var f = SCALE[Math.floor(Math.random() * SCALE.length)];
+
+		[
+			[f, 0.14],
+			[f * 2.76, 0.04],
+		].forEach(function (p) {
+			var osc = ctx.createOscillator();
+			var gain = ctx.createGain();
+
+			osc.type = 'sine';
+			osc.frequency.value = p[0];
+
+			gain.gain.setValueAtTime(0.0001, now);
+			gain.gain.exponentialRampToValueAtTime(p[1], now + 0.03);
+			gain.gain.exponentialRampToValueAtTime(0.0001, now + 7);
+
+			osc.connect(gain);
+			gain.connect(master);
+			gain.connect(echoIn);
+
+			osc.start(now);
+			osc.stop(now + 7.2);
+		});
+	}
+
+	function scheduleBell(first) {
+		bellTimer = setTimeout(
+			function () {
+				if (!on) return;
+
+				playBell();
+				scheduleBell(false);
+			},
+			first ? 1800 : 5000 + Math.random() * 11000
+		);
+	}
+
+	/*
+	 * CRACKLE: a tiny burst of filtered noise, very rare.
+	 */
+	function playCrackle() {
+		if (!ctx) return;
+
+		var length = Math.floor(ctx.sampleRate * 0.05);
+		var buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+		var data = buffer.getChannelData(0);
+
+		for (var i = 0; i < length; i++) {
+			data[i] = (Math.random() * 2 - 1) * (1 - i / length);
+		}
+
+		var src = ctx.createBufferSource();
+		var hp = ctx.createBiquadFilter();
+		var gain = ctx.createGain();
+
+		src.buffer = buffer;
+		hp.type = 'highpass';
+		hp.frequency.value = 3500;
+		gain.gain.value = 0.05;
+
+		src.connect(hp);
+		hp.connect(gain);
+		gain.connect(master);
+
+		src.start();
+	}
+
+	function scheduleCrackle() {
+		crackleTimer = setTimeout(
+			function () {
+				if (!on) return;
+
+				playCrackle();
+
+				if (Math.random() < 0.4) {
+					setTimeout(playCrackle, 90);
+				}
+
+				scheduleCrackle();
+			},
+			14000 + Math.random() * 22000
+		);
+	}
+
+	function setButton() {
+		btn.textContent = on ? 'sound on' : 'sound off';
+		btn.setAttribute('aria-pressed', String(on));
+	}
+
+	function teardown() {
+		clearTimeout(stopTimer);
+		stopTimer = null;
+
+		sources.forEach(function (node) {
+			try {
+				node.stop();
+			} catch (e) {}
+		});
+		sources = [];
+
+		if (ctx) {
+			try {
+				ctx.close();
+			} catch (e) {}
+		}
+
+		ctx = null;
+		master = null;
+		echoIn = null;
+	}
+
+	function start() {
+		/*
+		 * If a fade-out is still running, finish it first.
+		 */
+		if (stopTimer) teardown();
+
+		ctx = new AC();
+
+		master = ctx.createGain();
+		master.gain.setValueAtTime(0.0001, ctx.currentTime);
+		master.gain.exponentialRampToValueAtTime(VOLUME, ctx.currentTime + 2.5);
+		master.connect(ctx.destination);
+
+		buildEcho();
+		buildDrone();
+
+		on = true;
+		setButton();
+
+		if (ctx.state === 'suspended') ctx.resume();
+
+		scheduleBell(true);
+		scheduleCrackle();
+	}
+
+	function stop() {
+		if (!on) return;
+
+		on = false;
+		setButton();
+
+		clearTimeout(bellTimer);
+		clearTimeout(crackleTimer);
+
+		if (ctx && master) {
+			master.gain.cancelScheduledValues(ctx.currentTime);
+			master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
+			master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
+		}
+
+		stopTimer = setTimeout(teardown, 1400);
+	}
+
+	btn.addEventListener('click', function () {
+		if (on) {
+			stop();
+		} else {
+			start();
+		}
+	});
+
+	/*
+	 * Silence when the visitor leaves the tab.
+	 */
+	document.addEventListener('visibilitychange', function () {
+		if (document.hidden) stop();
+	});
+}
+
+
+/* =========================================================
    INITIALIZATION
    ========================================================= */
 
@@ -1152,6 +1447,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	initMenu();
 	initBirdy();
 	initVisibilityObserver();
+	initAmbient();
 
 
 	loadPortfolio();
