@@ -9,7 +9,7 @@
 
 ---
 
-Personal artistic portfolio for **Gini Cormerais**, gathering photographic series and visual experiments.
+Personal artistic portfolio, gathering photographic series and visual experiments.
 
 The website is currently in development.
 
