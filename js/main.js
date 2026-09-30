@@ -674,7 +674,15 @@ function initFilters() {
 			});
 
 			link.classList.add('active');
-
+			/*
+			 * On mobile the filter row scrolls sideways:
+			 * keep the selected filter in view.
+			 */
+			link.scrollIntoView({
+				behavior: 'smooth',
+				inline: 'center',
+				block: 'nearest',
+			});
 			/*
 			 * Every click generates a new random arrangement.
 			 */
