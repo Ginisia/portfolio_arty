@@ -80,53 +80,151 @@ function isMobileLayout() {
 
 /* =========================================================
    SCRAMBLE TEXT
+   =========================================================
+   - Alternates between the words in PHRASES, non-stop
+   - Only runs while the hero is visible and the tab is active
+   - Pauses completely otherwise (no CPU wasted)
    ========================================================= */
 
 function initScramble() {
 	var element = document.getElementById('scrambleTag');
+	var hero = document.querySelector('header.intro');
 
 	if (!element) return;
 
-	var originalText = element.textContent.trim();
-	var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+	var PHRASES = ['Photography', 'Installation'];
+	var PAUSE = 2800; // time each word stays readable (ms)
+	var chars = '!<>-_\\/[]{}—=+*^?#';
 
-	var isRunning = false;
+	/*
+	 * Respect users who asked for reduced motion:
+	 * the first word stays, no animation.
+	 */
+	if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-	function scramble() {
-		if (isRunning) return;
+	var frame = 0;
+	var queue = [];
+	var frameRequest = null;
+	var timer = null;
+	var counter = 0;
+	var running = false;
+	var heroVisible = true;
 
-		isRunning = true;
+	function setText(newText, onDone) {
+		var oldText = element.textContent;
+		var length = Math.max(oldText.length, newText.length);
 
-		var iterations = 0;
-		var maxIterations = originalText.length * 3;
+		queue = [];
 
-		var interval = setInterval(function () {
-			element.textContent = originalText
-				.split('')
-				.map(function (char, index) {
-					if (char === ' ') return ' ';
+		for (var i = 0; i < length; i++) {
+			var start = Math.floor(Math.random() * 30);
+			var end = start + Math.floor(Math.random() * 30);
 
-					if (index < iterations / 3) {
-						return originalText[index];
+			queue.push({
+				from: oldText[i] || '',
+				to: newText[i] || '',
+				start: start,
+				end: end,
+				char: null,
+			});
+		}
+
+		frame = 0;
+
+		function update() {
+			var output = '';
+			var complete = 0;
+
+			for (var i = 0; i < queue.length; i++) {
+				var q = queue[i];
+
+				if (frame >= q.end) {
+					complete++;
+					output += q.to;
+				} else if (frame >= q.start) {
+					if (!q.char || Math.random() < 0.3) {
+						q.char = chars[Math.floor(Math.random() * chars.length)];
 					}
 
-					return chars[Math.floor(Math.random() * chars.length)];
-				})
-				.join('');
-
-			iterations++;
-
-			if (iterations > maxIterations) {
-				clearInterval(interval);
-				element.textContent = originalText;
-				isRunning = false;
+					output += '<span class="glitch-scramble">' + q.char + '</span>';
+				} else {
+					output += q.from;
+				}
 			}
-		}, 45);
+
+			element.innerHTML = output;
+
+			if (complete === queue.length) {
+				frameRequest = null;
+				onDone();
+			} else {
+				frame++;
+				frameRequest = requestAnimationFrame(update);
+			}
+		}
+
+		update();
 	}
 
-	scramble();
+	function next() {
+		setText(PHRASES[counter], function () {
+			timer = setTimeout(next, PAUSE);
+		});
 
-	element.addEventListener('mouseenter', scramble);
+		counter = (counter + 1) % PHRASES.length;
+	}
+
+	function start() {
+		if (running) return;
+
+		running = true;
+		next();
+	}
+
+	function stop() {
+		if (!running) return;
+
+		running = false;
+
+		if (frameRequest !== null) {
+			cancelAnimationFrame(frameRequest);
+			frameRequest = null;
+		}
+
+		clearTimeout(timer);
+		timer = null;
+
+		/*
+		 * Leave a clean, readable word (no half-scrambled text).
+		 */
+		var current = (counter - 1 + PHRASES.length) % PHRASES.length;
+		element.textContent = PHRASES[current];
+	}
+
+	function update() {
+		if (heroVisible && !document.hidden) {
+			start();
+		} else {
+			stop();
+		}
+	}
+
+	/*
+	 * Run only while the hero is on screen.
+	 */
+	if ('IntersectionObserver' in window && hero) {
+		new IntersectionObserver(
+			function (entries) {
+				heroVisible = entries[0].isIntersecting;
+				update();
+			},
+			{ threshold: 0 }
+		).observe(hero);
+	}
+
+	document.addEventListener('visibilitychange', update);
+
+	update();
 }
 
 /* =========================================================
@@ -635,20 +733,11 @@ function initMenu() {
 /* =========================================================
    FLOATING SPARKS (hero canvas)
    =========================================================
-   - Runs continuously while the hero is visible
-   - Fully stops when the hero is off-screen or the tab is
-     hidden (no CPU / battery wasted)
-   - Restarts as soon as the hero comes back into view
-   ========================================================= */
-
-/* =========================================================
-   FLOATING SPARKS (hero canvas)
-   =========================================================
+   - Original look: crisp red/cyan glitch squares, soft blurred
+     squares, dashed glitchy trails
    - Plays ONCE, when the visitor arrives on the site
-   - Stops for good as soon as the hero leaves the screen
-   - Stops for good after DURATION, and never restarts
-     (even if the visitor scrolls back to the hero)
-   - Lightweight: no blur filter, no dashed lines
+   - Stops for good when the hero leaves the screen or after
+     DURATION, and never restarts
    ========================================================= */
 
 function initBirdy() {
@@ -670,20 +759,21 @@ function initBirdy() {
 	if (!ctx) return;
 
 	/*
-	 * Tweak these to make the effect more or less present.
+	 * Original values.
 	 */
-	var COUNT = 10;          // number of sparks
-	var TRAIL_LEN = 8;       // trail length
-	var SPEED = 0.5;         // overall speed
-	var SIZE_BOOST = 1.4;    // global size multiplier
-	var BLURRY_RATIO = 0.4;  // share of soft (ghost) sparks
-	var ALPHA_BOOST = 1.35;  // global opacity multiplier
-	var DURATION = 7000;     // total time the effect plays (ms)
-	var FADE_OUT = 1500;     // fade-out at the end (ms)
+	var speed = 0.4;
+	var trailLen = 10;
+	var count = 7;
+
+	/*
+	 * Lifetime of the effect.
+	 */
+	var DURATION = 8000;   // total time the effect plays (ms)
+	var FADE_OUT = 1800;   // fade-out at the end (ms)
 
 	var width, height;
 	var frame = 0;
-	var trailIndex = 0;
+	var trailIndex = -1;
 	var particles = [];
 	var mouse = { x: 0.5, y: 0.5, z: 0.5 };
 	var z = { current: 1, target: 1 };
@@ -708,7 +798,7 @@ function initBirdy() {
 	function create() {
 		particles = [];
 
-		for (var i = 0; i < COUNT; i++) {
+		for (var i = 0; i < count; i++) {
 			particles.push({
 				speed: (0.2 + Math.random() * 0.8) / 2000,
 				pos: {
@@ -722,9 +812,9 @@ function initBirdy() {
 					z: 0,
 				},
 				own: { t: (20 + Math.random() * 100) | 0, x: 0, y: 0 },
-				trail: new Float32Array(TRAIL_LEN * 2),
-				sizeMult: (0.6 + Math.random() * 2.4) * SIZE_BOOST,
-				blurry: Math.random() < BLURRY_RATIO,
+				trail: new Float32Array(trailLen * 2),
+				sizeMult: 0.5 + Math.random() * 2.4,
+				blurry: Math.random() < 0.65,
 				jerk: Math.random(),
 			});
 		}
@@ -732,7 +822,8 @@ function initBirdy() {
 
 	function solveMove(p) {
 		/*
-		 * Ghost sparks drift slowly, sharp ones stay snappy.
+		 * Blurry / spectral ones drift slowly,
+		 * sharp ones stay snappy.
 		 */
 		var calm = p.blurry ? 0.4 : 1;
 
@@ -745,12 +836,13 @@ function initBirdy() {
 			p.own.y = (0.5 - Math.random()) / 3;
 		}
 
-		p.move.x += SPEED * calm * (mouse.x - p.pos.x + p.own.x) * p.speed;
-		p.move.y += SPEED * calm * (mouse.y - p.pos.y + p.own.y) * p.speed;
-		p.move.z += SPEED * calm * (mouse.z - p.pos.z) * p.speed;
+		p.move.x += speed * calm * (mouse.x - p.pos.x + p.own.x) * p.speed;
+		p.move.y += speed * calm * (mouse.y - p.pos.y + p.own.y) * p.speed;
+		p.move.z += speed * calm * (mouse.z - p.pos.z) * p.speed;
 
 		/*
-		 * Staccato kicks: sudden jerky direction changes.
+		 * Staccato kicks: sudden jerky direction changes,
+		 * muted for the slow, spectral ones.
 		 */
 		if (Math.random() < 0.015 + p.jerk * 0.05) {
 			p.move.x += (Math.random() - 0.5) * 0.06 * (0.5 + p.jerk) * calm;
@@ -758,119 +850,114 @@ function initBirdy() {
 		}
 	}
 
+	function trailIdxSet(p, pos) {
+		p.trail[trailIndex * 2] = pos.x;
+		p.trail[trailIndex * 2 + 1] = pos.y;
+	}
+
 	function drawSpark(p) {
-		var x = p.pos.x * width;
-		var y = p.pos.y * height;
-		var depth = p.pos.z * 1.5;
+		var pos = { x: p.pos.x * width, y: p.pos.y * height, z: p.pos.z * 1.5 };
 		var size = Math.max(
-			3,
-			((width + height) / 500) * depth * z.current * p.sizeMult
+			2,
+			((width + height) / 500) * pos.z * z.current * p.sizeMult
 		);
 
-		/*
-		 * Store position for the trail.
-		 */
-		p.trail[trailIndex * 2] = x;
-		p.trail[trailIndex * 2 + 1] = y;
+		trailIdxSet(p, pos);
 
 		/*
-		 * Occasional flicker: skip drawing, or jump sideways.
+		 * Occasional flicker: sometimes skip drawing entirely,
+		 * or jump position.
 		 */
 		var flicker = Math.random();
 
-		if (flicker < 0.04) return;
+		if (flicker < 0.06) return;
 
-		var jitter = flicker < 0.14 ? (Math.random() - 0.5) * size * 3 : 0;
+		var jitter = flicker < 0.16 ? (Math.random() - 0.5) * size * 3 : 0;
 
 		if (p.blurry) {
 			/*
-			 * Soft ghost: two translucent squares instead of
-			 * a blur filter (much cheaper to draw).
+			 * Soft blurred square, no channel split:
+			 * contrasts with the crisp glitch fragments.
 			 */
-			ctx.fillStyle = 'rgba(215,140,135,' + 0.1 * ALPHA_BOOST + ')';
+			ctx.save();
+			ctx.filter = 'blur(' + Math.max(1.5, size * 0.55) + 'px)';
+			ctx.fillStyle = 'rgba(215,140,135,0.28)';
 			ctx.fillRect(
-				x - size * 1.1 + jitter,
-				y - size * 1.1,
-				size * 2.2,
-				size * 2.2
+				pos.x - size / 1.3 + jitter,
+				pos.y - size / 1.3,
+				size * 1.6,
+				size * 1.6
 			);
-
-			ctx.fillStyle = 'rgba(215,140,135,' + 0.18 * ALPHA_BOOST + ')';
-			ctx.fillRect(
-				x - size * 0.6 + jitter,
-				y - size * 0.6,
-				size * 1.2,
-				size * 1.2
-			);
-
+			ctx.restore();
 			return;
 		}
 
 		/*
-		 * Sharp fragment with a red/cyan channel split.
+		 * Small squared fragments with a red/cyan channel split.
 		 */
-		ctx.fillStyle = 'rgba(210,90,85,' + Math.min(1, 0.55 * ALPHA_BOOST) + ')';
-		ctx.fillRect(x - size / 2 - 1.2 + jitter, y - size / 2, size, size);
+		ctx.fillStyle = 'rgba(210,90,85,0.55)';
+		ctx.fillRect(pos.x - size / 2 - 1.2 + jitter, pos.y - size / 2, size, size);
 
-		ctx.fillStyle = 'rgba(120,200,195,' + Math.min(1, 0.45 * ALPHA_BOOST) + ')';
-		ctx.fillRect(x - size / 2 + 1.2 + jitter, y - size / 2, size, size);
+		ctx.fillStyle = 'rgba(120,200,195,0.45)';
+		ctx.fillRect(pos.x - size / 2 + 1.2 + jitter, pos.y - size / 2, size, size);
 
-		ctx.fillStyle = 'rgba(235,225,220,' + Math.min(1, 0.75 * ALPHA_BOOST) + ')';
-		ctx.fillRect(x - size / 2 + jitter, y - size / 2, size, size);
+		ctx.fillStyle = 'rgba(235,225,220,0.75)';
+		ctx.fillRect(pos.x - size / 2 + jitter, pos.y - size / 2, size, size);
 	}
 
 	function drawTrails() {
-		/*
-		 * One single path for every trail segment,
-		 * drawn with a single stroke() call.
-		 */
-		ctx.beginPath();
-		ctx.lineWidth = Math.max(1, (width + height) / 1800);
-		ctx.strokeStyle = 'rgba(190,100,95,' + Math.min(1, 0.3 * ALPHA_BOOST) + ')';
-
-		for (var i = TRAIL_LEN; i >= 2; i--) {
+		for (var i = trailLen; i >= 2; i--) {
 			/*
-			 * Skip segments at random for a glitchy,
-			 * discontinuous trail.
+			 * Skip segments at random for a discontinuous,
+			 * glitchy trail instead of a smooth curved tail.
 			 */
-			if (Math.random() < 0.3) continue;
+			if (Math.random() < 0.35) continue;
 
-			var cur = (trailIndex + i) % TRAIL_LEN;
-			var last = (trailIndex + i + TRAIL_LEN - 1) % TRAIL_LEN;
+			ctx.beginPath();
+			ctx.lineWidth = Math.max(1, (i / trailLen) * ((width + height) / 1800));
+			ctx.setLineDash([2, 5]);
+			ctx.strokeStyle = 'rgba(190,100,95,' + i / trailLen / 4 + ')';
 
-			for (var k = 0; k < particles.length; k++) {
-				var t = particles[k].trail;
+			var cur = (trailIndex + i) % trailLen;
+			var last = (trailIndex + i + trailLen - 1) % trailLen;
 
-				if (t[last * 2] && t[cur * 2]) {
-					ctx.moveTo(t[cur * 2], t[cur * 2 + 1]);
-					ctx.lineTo(t[last * 2], t[last * 2 + 1]);
+			particles.forEach(function (p) {
+				if (p.trail[last * 2] && p.trail[cur * 2]) {
+					ctx.moveTo(p.trail[cur * 2], p.trail[cur * 2 + 1]);
+					ctx.lineTo(p.trail[last * 2], p.trail[last * 2 + 1]);
 				}
-			}
+			});
+
+			ctx.stroke();
 		}
 
-		ctx.stroke();
+		ctx.setLineDash([]);
 	}
 
 	function tick() {
 		if (finished) return;
 
-		frame++;
-		z.current += (z.target - z.current) / 100;
+		try {
+			frame++;
+			z.current += (z.target - z.current) / 100;
 
-		ctx.clearRect(0, 0, width, height);
+			ctx.clearRect(0, 0, width, height);
 
-		particles.forEach(function (p) {
-			solveMove(p);
-			p.pos.x += p.move.x;
-			p.pos.y += p.move.y;
-			p.pos.z += p.move.z;
-		});
+			particles.forEach(function (p) {
+				solveMove(p);
+				p.pos.x += p.move.x;
+				p.pos.y += p.move.y;
+				p.pos.z += p.move.z;
+			});
 
-		drawTrails();
+			drawTrails();
 
-		trailIndex = (trailIndex + 1) % TRAIL_LEN;
+			trailIndex = (trailIndex + 1) % trailLen;
 
-		particles.forEach(drawSpark);
+			particles.forEach(drawSpark);
+		} catch (e) {
+			/* never let a transient glitch kill the loop */
+		}
 
 		rafId = requestAnimationFrame(tick);
 	}
@@ -939,6 +1026,7 @@ function initBirdy() {
 		if (document.hidden) {
 			pause();
 		} else {
+			resize();
 			start();
 		}
 	}

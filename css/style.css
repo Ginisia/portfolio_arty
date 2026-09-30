@@ -161,14 +161,61 @@ section{padding:12rem 20px;max-width:1180px;margin:0 auto;}
 .section-title hr.rule{margin:0 0 30px;}
 
 /* ---------------- ABOUT ---------------- */
-#about{padding:5rem 20px;}
+#about{padding:3rem 20px;}
 .gif-container{
   margin:0 auto 20px;width:16em;height:16em;
   border-radius:0;overflow:hidden;opacity:0.6;
 }
 .gif-container img{width:100%;height:100%;object-fit:cover;}
-.about-text{max-width:640px;margin:0 auto;text-align:center;}
-.about-text p{margin:20px 0 30px;line-height:1.85;font-size:17px;font-style:normal;color:var(--muted);font-weight:300;}
+.about-frag{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+  gap:14px 30px;
+  max-width:640px;margin:0 auto;padding:0 10px;
+  height:11em;
+  position: relative;
+}
+.about-frag span{
+  color:var(--muted);line-height:1.35;
+  max-width:26em;
+  transition:color .3s ease;
+}
+
+/* Trois voix */
+.about-frag .f1{font-family:'Grenze Gotisch',serif;font-weight:200;font-size:clamp(15px,1.8vw,20px);letter-spacing:.5px;}
+.about-frag .f2{font-family:'Syncopate',sans-serif;font-size:clamp(7px,.8vw,9px);letter-spacing:3px;text-transform:uppercase;}
+.about-frag .f3{font-family:'Orbitron',sans-serif;font-size:clamp(9px,1vw,12px);letter-spacing:1.5px;}
+
+/* Sens vertical, sur un fragment seulement */
+.about-frag .v{writing-mode:vertical-rl;max-height:10em;}
+
+/* Décalages irréguliers */
+.about-frag .o1{margin-left:clamp(10px,6vw,70px);}
+.about-frag .o2{align-self:flex-start;margin-top:8px;}
+.about-frag .o3{align-self:flex-end;margin-right:clamp(0px,4vw,50px);}
+/* Vertical lu du bas vers le haut */
+/* Vertical du bas vers le haut, collé à droite, hors du flux */
+.about-frag .v-up{
+  position:absolute;
+  right:0;top:50%;
+  margin:0;
+  max-height:16em;
+  transform:translateY(-50%) rotate(180deg);
+}
+
+.about-frag .faint{opacity:.5;}
+
+/* Survol : le fragment devient lisible */
+.about-frag span:hover{
+  font-family:var(--sans) !important;font-weight:300 !important;
+  letter-spacing:.3px !important;text-transform:none !important;
+  font-size:14px !important;
+  color:var(--ink);opacity:1;
+}
+
+@media (max-width:620px){
+  .about-frag .v{writing-mode:horizontal-tb;max-height:none;}
+  .about-frag .v-up{transform:none;}
+}
 
 .btn{
   display:inline-block;
@@ -190,7 +237,7 @@ section{padding:12rem 20px;max-width:1180px;margin:0 auto;}
 }
 
 /* ---------------- PORTFOLIO ---------------- */
-#portfolio{background:var(--portfolio-bg);max-width:none;padding:6rem 20px 12rem;}
+#portfolio{background:var(--portfolio-bg);max-width:none;padding:2.5rem 20px 8rem;}
 #portfolio .inner{max-width:1180px;margin:0 auto;}
 #portfolio .section-title h2{
   color:#e6ded0;
@@ -207,7 +254,7 @@ section{padding:12rem 20px;max-width:1180px;margin:0 auto;}
 @media (prefers-reduced-motion:reduce){
   #portfolio .section-title h2{animation:none;}
 }
-.categories{text-align:center;padding-bottom:110px;margin-top:40px;}
+.categories{text-align:center;padding-bottom:110px;margin-top:20px;}
 .categories ul{display:flex;flex-wrap:wrap;justify-content:center;gap:30px;}
 .categories a{
   position:relative;display:inline-flex;align-items:center;gap:9px;
@@ -339,28 +386,14 @@ section{padding:12rem 20px;max-width:1180px;margin:0 auto;}
 
 /* ---------------- CONTACT ---------------- */
 #contact{
-  max-width:none;background:var(--dark);color:#eee;text-align:center;padding:12rem 20px;
+  background:var(--dark);
+  display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:20px;
+  padding:1.6rem 20px;
+  font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;
 }
-#contact .inner{max-width:640px;margin:0 auto;}
-#contact h2{color:#fff;transform:rotate(-1deg);display:inline-block;}
-#contact h3{color:#cfc6c6;font-weight:400;font-family:var(--mono);font-size:13px;letter-spacing:1px;margin-top:14px;}
-.social{margin-top:50px;}
-.social ul{display:flex;justify-content:center;gap:26px;}
-.social a{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:46px;height:46px;border-radius:1.2em 0;
-  border:1px solid rgba(255,255,255,0.3);color:#eee;
-  transition:all .3s ease;
-}
-.social a:hover{background:rgba(255,255,255,0.12);color:#fff;}
-.social svg{width:20px;height:20px;fill:currentColor;}
-
-/* ---------------- FOOTER ---------------- */
-#footer{
-  box-shadow:0 -4px 30px rgba(0,0,0,0.06);
-  padding:2rem 0 1.5rem;text-align:center;
-}
-#footer p{font-size:12px;margin:0;color:var(--muted);font-family:var(--mono);letter-spacing:0.5px;}
+#contact a{color:#9a9090;}
+#contact a:hover{color:#fff;}
+#contact span{color:#5c5555;}
 
 /* ---------------- LIGHTBOX ---------------- */
 .lightbox{
