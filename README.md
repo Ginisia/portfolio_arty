@@ -3,7 +3,7 @@
 
 **Visual Art · Portfolio**
 
-[↗ Visit the website](https://ginisia.github.io/portfolio_/prod/)
+[↗ Visit the website](https://ginisia.github.io/portfolio_arty/)
 
 </div>
 
